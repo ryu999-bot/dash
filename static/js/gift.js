@@ -11,9 +11,9 @@ const Gift = (() => {
         const end = Utils.addDays(endRaw, 1);
 
         const [summary, products, monthly] = await Promise.all([
-            Utils.fetchJson(`/api/gift/summary?start=${start}&end=${end}`),
-            Utils.fetchJson(`/api/gift/products?start=${start}&end=${end}&site=${encodeURIComponent(currentSite)}`),
-            Utils.fetchJson("/api/gift/monthly"),
+            Utils.fetchJson(`api/gift/summary?start=${start}&end=${end}`),
+            Utils.fetchJson(`api/gift/products?start=${start}&end=${end}&site=${encodeURIComponent(currentSite)}`),
+            Utils.fetchJson("api/gift/monthly"),
         ]);
 
         renderSummary(summary);

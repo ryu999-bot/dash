@@ -7,7 +7,7 @@ const Export = {
         const start = document.getElementById('startDate').value;
         const end = Utils.addDays(document.getElementById('endDate').value, 1);
         const basis = document.querySelector('.date-basis-btn.active')?.dataset.basis || 'order_date';
-        window.location.href = `/api/export?start=${start}&end=${end}&basis=${basis}`;
+        window.location.href = `api/export?start=${start}&end=${end}&basis=${basis}`;
     },
 
     /** Client-side export (SheetJS, fast) */

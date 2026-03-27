@@ -43,7 +43,7 @@ const Affiliate = {
     async load() {
         this.initFilters();
         const { start, end, label } = this.getDateRange();
-        const data = await Utils.fetchJson(`/api/affiliate/monthly?start=${start}&end=${end}`);
+        const data = await Utils.fetchJson(`api/affiliate/monthly?start=${start}&end=${end}`);
         this.data = data;
         this.render(label);
     },
@@ -134,6 +134,6 @@ const Affiliate = {
 
     exportUrl() {
         const { start, end } = this.getDateRange();
-        return `/api/affiliate/export?start=${start}&end=${end}`;
+        return `api/affiliate/export?start=${start}&end=${end}`;
     }
 };

@@ -13,7 +13,7 @@ const Mail = {
         form.append('file', input.files[0]);
 
         try {
-            const res = await fetch('/api/mail/upload', { method: 'POST', body: form });
+            const res = await fetch('api/mail/upload', { method: 'POST', body: form });
             const data = await res.json();
             if (data.error) return alert(data.error);
 
@@ -63,7 +63,7 @@ const Mail = {
             const form = new FormData();
             form.append('file', file);
             try {
-                const res = await fetch('/api/mail/attach', { method: 'POST', body: form });
+                const res = await fetch('api/mail/attach', { method: 'POST', body: form });
                 const data = await res.json();
                 if (data.error) { alert(data.error); continue; }
                 this.attachments.push(data.filename);
@@ -117,7 +117,7 @@ const Mail = {
         sendBtn.textContent = '발송 중...';
 
         try {
-            const res = await fetch('/api/mail/send', {
+            const res = await fetch('api/mail/send', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ subject, body, recipients: selected }),

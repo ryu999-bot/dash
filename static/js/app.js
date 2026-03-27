@@ -123,7 +123,7 @@
 
     // SKU export button
     document.getElementById('skuExportServer').addEventListener('click', () => {
-        window.location.href = '/api/sku/export';
+        window.location.href = 'api/sku/export';
     });
 
     /**
@@ -145,14 +145,14 @@
         try {
             switch (tab) {
                 case 'dashboard':
-                    const kpiData = await Utils.fetchJson(`/api/kpi?${qs()}`);
+                    const kpiData = await Utils.fetchJson(`api/kpi?${qs()}`);
                     KPI.render(kpiData);
                     KPI.renderSiteTable(kpiData);
                     Charts.renderSitePie(kpiData);
                     Charts.renderSiteBar(kpiData);
                     break;
                 case 'detail':
-                    const detailData = await Utils.fetchJson(`/api/detail?${qs()}`);
+                    const detailData = await Utils.fetchJson(`api/detail?${qs()}`);
                     DetailTable.render(detailData);
                     break;
                 case 'trend':
@@ -160,7 +160,7 @@
                     await Member.load();
                     break;
                 case 'funnel':
-                    const funnelData = await Utils.fetchJson(`/api/funnel?${qs()}`);
+                    const funnelData = await Utils.fetchJson(`api/funnel?${qs()}`);
                     Funnel.render(funnelData);
                     break;
                 case 'affiliate':

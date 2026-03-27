@@ -48,7 +48,7 @@ const Member = {
     async load() {
         this.initFilters();
         const { start, end, label } = this.getDateRange();
-        const data = await Utils.fetchJson(`/api/member/monthly?start=${start}&end=${end}`);
+        const data = await Utils.fetchJson(`api/member/monthly?start=${start}&end=${end}`);
         this.data = data;
         this.render(label);
     },

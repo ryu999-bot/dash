@@ -20,7 +20,7 @@ const SiteTrend = {
     wow: null,
 
     async load() {
-        const resp = await Utils.fetchJson('/api/sitetrend');
+        const resp = await Utils.fetchJson('api/sitetrend');
         this.data = resp.data;
         this.partialYoy = resp.partial_yoy || {};
         this.wow = resp.wow || {};
