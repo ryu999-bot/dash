@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>바른손컴퍼니 영업 분석 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <h1 class="text-xl font-bold text-gray-800">바른손컴퍼니 영업 분석 대시보드</h1>
+            <span id="lastUpdate" class="text-sm text-gray-500"></span>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-white border-b">
+        <div class="max-w-7xl mx-auto px-4 flex space-x-1">
+            <button class="tab-btn active" data-tab="dashboard">통합 대시보드</button>
+            <button class="tab-btn" data-tab="detail">사이트별 상세</button>
+            <button class="tab-btn" data-tab="trend">사이트 MOM/YOY</button>
+            <button class="tab-btn" data-tab="funnel">퍼널 분석</button>
+            <button class="tab-btn" data-tab="affiliate">제휴업체</button>
+            <button class="tab-btn" data-tab="sku">상품 목록</button>
+            <button class="tab-btn" data-tab="gift">답례품</button>
+            <button class="tab-btn" data-tab="mail">메일 발송</button>
+            <button class="tab-btn" data-tab="glossary">용어사전</button>
+        </div>
+    </nav>
+
+    <!-- Filter Bar -->
+    <div class="bg-white border-b shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
+            <!-- Quick Presets -->
+            <div class="flex gap-1">
+                <button class="preset-btn" data-preset="today">오늘</button>
+                <button class="preset-btn" data-preset="yesterday">어제</button>
+                <button class="preset-btn" data-preset="thisWeek">이번주</button>
+                <button class="preset-btn" data-preset="lastWeek">지난주</button>
+                <button class="preset-btn active" data-preset="thisMonth">이번달</button>
+                <button class="preset-btn" data-preset="lastMonth">지난달</button>
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="date" id="startDate" class="border rounded px-2 py-1 text-sm">
+                <span class="text-gray-400">~</span>
+                <input type="date" id="endDate" class="border rounded px-2 py-1 text-sm">
+                <button id="searchBtn" class="bg-blue-600 text-white px-4 py-1 rounded text-sm hover:bg-blue-700">조회</button>
+            </div>
+            <div class="flex items-center gap-1 ml-auto">
+                <span class="text-xs text-gray-500 mr-1">기준일:</span>
+                <button class="date-basis-btn active" data-basis="order_date">주문일</button>
+                <button class="date-basis-btn" data-basis="settle_date">결제일</button>
+                <button class="date-basis-btn" data-basis="delivery_date">배송일</button>
+            </div>
+        </div>
+    </div>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <!-- Tab: Dashboard -->
+        <section id="tab-dashboard" class="tab-content">
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6" id="kpiCards"></div>
+
+            <!-- Site Summary Table -->
+            <div class="bg-white rounded-lg shadow p-4 mb-6">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-lg font-semibold">사이트별 요약</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm" id="siteSummaryTable">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 py-2 text-left">사이트</th>
+                                <th class="px-3 py-2 text-right">주문수</th>
+                                <th class="px-3 py-2 text-right">매출액</th>
+                                <th class="px-3 py-2 text-right">객단가</th>
+                                <th class="px-3 py-2 text-right">비중</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h3 class="text-sm font-semibold mb-2">사이트별 매출 비중</h3>
+                    <canvas id="sitePieChart"></canvas>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h3 class="text-sm font-semibold mb-2">사이트별 주문 비교</h3>
+                    <canvas id="siteBarChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab: Detail -->
+        <section id="tab-detail" class="tab-content hidden">
+            <!-- Site Sub-tabs -->
+            <div class="flex gap-1 mb-4">
+                <button class="site-tab-btn active" data-site="전체">전체</button>
+                <button class="site-tab-btn" data-site="바른손카드">바른손카드</button>
+                <button class="site-tab-btn" data-site="바른손몰">바른손몰</button>
+                <button class="site-tab-btn" data-site="디얼디어">디얼디어</button>
+                <button class="site-tab-btn" data-site="프리미어페이퍼">프리미어페이퍼</button>
+                <button class="site-tab-btn" data-site="M카드">M카드</button>
+            </div>
+
+            <!-- Site KPI summary (per selected site) -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4" id="detailKpiCards"></div>
+
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-lg font-semibold" id="detailTitle">상세 데이터 - 전체</h2>
+                    <div class="flex gap-2">
+                        <button id="exportXlsx" class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">엑셀 다운로드</button>
+                        <button id="exportClient" class="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700">SheetJS 다운로드</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm" id="detailTable">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 py-2 text-left">날짜</th>
+                                <th class="px-3 py-2 text-left">사이트</th>
+                                <th class="px-3 py-2 text-left">상품구분</th>
+                                <th class="px-3 py-2 text-right">주문수</th>
+                                <th class="px-3 py-2 text-right">매출액</th>
+                                <th class="px-3 py-2 text-right">객단가</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab: Site Trend (MOM/YOY) -->
+        <section id="tab-trend" class="tab-content hidden">
+            <h2 class="text-base font-semibold mb-4">사이트별 MOM / YOY / WOW 분석</h2>
+
+            <!-- WOW Section -->
+            <div id="wowSection" class="mb-6"></div>
+
+            <!-- KPI Cards per site -->
+            <div id="siteTrendKpi" class="space-y-6 mb-6"></div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h3 class="text-sm font-semibold mb-2">사이트별 월별 매출 추이</h3>
+                    <canvas id="stRevenueChart"></canvas>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h3 class="text-sm font-semibold mb-2">사이트별 월별 주문 추이</h3>
+                    <canvas id="stOrderChart"></canvas>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h3 class="text-sm font-semibold mb-2">사이트별 월별 객단가 추이</h3>
+                    <canvas id="stAvgPriceChart"></canvas>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h3 class="text-sm font-semibold mb-2">사이트별 월별 객수량 추이</h3>
+                    <canvas id="stAvgQtyChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 회원가입 추이 -->
+            <div class="flex items-center justify-between mt-8 mb-4">
+                <h2 class="text-base font-semibold">사이트별 월별 회원가입 추이</h2>
+                <div class="flex items-center gap-2">
+                    <select id="memStartMonth" class="border rounded px-2 py-1 text-sm"></select>
+                    <span class="text-gray-400">~</span>
+                    <select id="memEndMonth" class="border rounded px-2 py-1 text-sm"></select>
+                    <button id="memSearchBtn" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">조회</button>
+                    <p id="memSummary" class="text-sm text-gray-500 ml-2"></p>
+                </div>
+            </div>
+            <div id="memberKpi" class="space-y-6 mb-6"></div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <h3 class="text-sm font-semibold mb-2">사이트별 월별 가입수 추이</h3>
+                <canvas id="memberChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Tab: Funnel -->
+        <section id="tab-funnel" class="tab-content hidden">
+            <!-- Combined Paper Funnel -->
+            <h2 class="text-base font-semibold mb-2">종이청첩장 전체</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h3 class="text-sm font-semibold mb-2">회원가입 → 샘플 → 결제</h3>
+                    <canvas id="funnelCombinedChart"></canvas>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h3 class="text-sm font-semibold mb-2">전환율 상세</h3>
+                    <div id="funnelCombinedDetail" class="space-y-4 pt-4"></div>
+                </div>
+            </div>
+
+            <!-- Per-site Funnels -->
+            <h2 class="text-base font-semibold mb-2">사이트별 퍼널</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" id="funnelSitesGrid"></div>
+
+            <!-- M-card Funnel -->
+            <h2 class="text-base font-semibold mb-2">바른손 M카드</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h3 class="text-sm font-semibold mb-2">초대장 생성 → 유료 결제</h3>
+                    <canvas id="funnelMcardChart"></canvas>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h3 class="text-sm font-semibold mb-2">전환율 상세</h3>
+                    <div id="funnelMcardDetail" class="space-y-4 pt-4"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab: Affiliate -->
+        <section id="tab-affiliate" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <h2 class="text-lg font-semibold">바른손몰 제휴업체별 매출 분석</h2>
+                        <p id="affSummary" class="text-sm text-gray-500 mt-1"></p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select id="affStartMonth" class="border rounded px-2 py-1 text-sm"></select>
+                        <span class="text-gray-400">~</span>
+                        <select id="affEndMonth" class="border rounded px-2 py-1 text-sm"></select>
+                        <button id="affSearchBtn" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">조회</button>
+                        <button id="affExport" class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">엑셀 다운로드</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto" style="max-height:700px; overflow-y:auto;">
+                    <table class="w-full text-sm" id="affiliateTable">
+                        <thead class="bg-gray-50 sticky top-0">
+                            <tr>
+                                <th class="px-3 py-2 text-center w-12">순위</th>
+                                <th class="px-3 py-2 text-left">업체명</th>
+                                <th class="px-3 py-2 text-center w-16">종류</th>
+                                <th class="px-3 py-2 text-right">주문수</th>
+                                <th class="px-3 py-2 text-right">매출액</th>
+                                <th class="px-3 py-2 text-right">비중</th>
+                                <th class="px-3 py-2 text-right">객단가</th>
+                                <th class="px-3 py-2 text-right">객수량</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab: Mail -->
+        <section id="tab-mail" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <!-- Left: Recipients -->
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h2 class="text-lg font-semibold mb-3">수신자 목록</h2>
+                    <div class="flex items-center gap-2 mb-3">
+                        <input type="file" id="mailExcelFile" accept=".xlsx,.xls" class="text-sm">
+                        <button onclick="Mail.uploadExcel()" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">업로드</button>
+                    </div>
+                    <p id="mailUploadInfo" class="text-sm text-gray-500 mb-2"></p>
+                    <p class="text-xs text-gray-400 mb-2">엑셀: A열=업체명, B열=메일주소 (헤더 없이 1행부터)</p>
+                    <div class="overflow-y-auto" style="max-height:400px;">
+                        <table class="w-full text-sm" id="mailRecipientTable">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-3 py-2 w-10"><input type="checkbox" id="mailSelectAll" checked onchange="Mail.toggleAll(this.checked)"></th>
+                                    <th class="px-3 py-2 text-center w-12">#</th>
+                                    <th class="px-3 py-2 text-left">업체명</th>
+                                    <th class="px-3 py-2 text-left">메일주소</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="4" class="px-3 py-4 text-center text-gray-400">엑셀 파일을 업로드하세요</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Right: Compose -->
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h2 class="text-lg font-semibold mb-3">메일 작성</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">제목</label>
+                            <input type="text" id="mailSubject" class="w-full border rounded px-3 py-2 text-sm"
+                                   placeholder="메일 제목 ({업체명} 사용 가능)">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">본문</label>
+                            <textarea id="mailBody" rows="12" class="w-full border rounded px-3 py-2 text-sm"
+                                      placeholder="메일 본문을 입력하세요.&#10;&#10;{업체명}을 사용하면 각 업체명으로 자동 치환됩니다."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">첨부파일</label>
+                            <div class="flex items-center gap-2 mb-2">
+                                <input type="file" id="mailAttachFile" multiple class="text-sm">
+                                <button onclick="Mail.addAttachment()" class="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700">추가</button>
+                            </div>
+                            <div id="mailAttachList"><span class="text-gray-400 text-sm">첨부파일 없음</span></div>
+                        </div>
+                        <div class="flex justify-end pt-2">
+                            <button id="mailSendBtn" onclick="Mail.send()"
+                                    class="bg-red-600 text-white px-6 py-2 rounded text-sm font-semibold hover:bg-red-700">
+                                메일 발송
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab: SKU List -->
+        <section id="tab-sku" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow p-6 max-w-lg mx-auto text-center">
+                <h2 class="text-lg font-semibold mb-2">상품 목록 다운로드</h2>
+                <p class="text-sm text-gray-500 mb-1">상품코드, SKU명, 판매가격, 브랜드, 디지털/마스터, 상품종류, 판매노출, 카드형태, 용지, 생산구분, 후가공(엠보/레이저/레터프레스), 박가공, 사이즈, 접기방식</p>
+                <p id="skuCount" class="text-sm text-gray-400 mb-6"></p>
+                <button id="skuExportServer" class="bg-green-600 text-white px-6 py-2 rounded text-sm hover:bg-green-700">엑셀 다운로드</button>
+            </div>
+        </section>
+        <!-- Tab: Gift -->
+        <section id="tab-gift" class="tab-content hidden">
+            <!-- KPI -->
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4" id="giftKpiCards"></div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                <!-- Monthly Chart -->
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h3 class="text-sm font-semibold mb-2">월별 답례품 매출 추이</h3>
+                    <canvas id="giftMonthlyChart"></canvas>
+                </div>
+
+                <!-- Product Table -->
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-semibold">상품별 판매 현황</h3>
+                        <div class="flex gap-1">
+                            <button class="site-tab-btn active" data-gsite="전체" onclick="document.querySelectorAll('[data-gsite]').forEach(b=>b.classList.remove('active'));this.classList.add('active');Gift.setSite('전체')">전체</button>
+                            <button class="site-tab-btn" data-gsite="바른손카드" onclick="document.querySelectorAll('[data-gsite]').forEach(b=>b.classList.remove('active'));this.classList.add('active');Gift.setSite('바른손카드')">바른손카드</button>
+                            <button class="site-tab-btn" data-gsite="바른손몰" onclick="document.querySelectorAll('[data-gsite]').forEach(b=>b.classList.remove('active'));this.classList.add('active');Gift.setSite('바른손몰')">바른손몰</button>
+                            <button class="site-tab-btn" data-gsite="디얼디어" onclick="document.querySelectorAll('[data-gsite]').forEach(b=>b.classList.remove('active'));this.classList.add('active');Gift.setSite('디얼디어')">디얼디어</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto" style="max-height:500px; overflow-y:auto;">
+                        <table class="w-full text-sm" id="giftProductTable">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-3 py-2 text-center w-12">#</th>
+                                    <th class="px-3 py-2 text-left">상품코드</th>
+                                    <th class="px-3 py-2 text-left">상품명</th>
+                                    <th class="px-3 py-2 text-right">단가</th>
+                                    <th class="px-3 py-2 text-right">주문수</th>
+                                    <th class="px-3 py-2 text-right">수량</th>
+                                    <th class="px-3 py-2 text-right">매출</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab: Glossary -->
+        <section id="tab-glossary" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow p-4 mb-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-lg font-semibold">DB 용어사전</h2>
+                    <input type="text" id="glossarySearch" placeholder="검색 (한글/영문/코드)"
+                           class="border rounded px-3 py-1.5 text-sm w-64" oninput="Glossary.filter(this.value)">
+                </div>
+                <div class="flex gap-1 mb-4 flex-wrap" id="glossaryCategoryBtns"></div>
+            </div>
+            <div id="glossaryContent" class="space-y-4"></div>
+        </section>
+    </main>
+
+    <footer class="text-center text-xs text-gray-400 py-4">
+        Barunson Company Sales Dashboard &copy; 2026
+    </footer>
+
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/kpi.js"></script>
+    <script src="/static/js/table.js"></script>
+    <script src="/static/js/charts.js"></script>
+    <script src="/static/js/funnel.js"></script>
+    <script src="/static/js/export.js"></script>
+    <script src="/static/js/affiliate.js"></script>
+    <script src="/static/js/member.js"></script>
+    <script src="/static/js/sitetrend.js"></script>
+    <script src="/static/js/mail.js"></script>
+    <script src="/static/js/sku.js"></script>
+    <script src="/static/js/gift.js"></script>
+    <script src="/static/js/glossary.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
